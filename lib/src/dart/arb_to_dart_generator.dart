@@ -50,7 +50,7 @@ class ArbToDartGenerator {
       builder.body.add(translationClass);
     });
 
-    final emitter = DartEmitter(Allocator.simplePrefixing());
+    final emitter = DartEmitter(allocator: Allocator.simplePrefixing());
     final emitted = library.accept(emitter);
     final formatted = DartFormatter().format('${emitted}');
 

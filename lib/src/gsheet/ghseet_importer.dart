@@ -7,7 +7,6 @@ import 'package:googleapis_auth/auth_io.dart';
 
 class GSheetImporter {
   final GoogleSheetConfig config;
-  
 
   GSheetImporter({this.config});
 
@@ -29,7 +28,7 @@ class GSheetImporter {
   }
 
   Future<AuthClient> _getAuthClient(AuthConfig auth) async {
-    final scopes = [SheetsApi.SpreadsheetsReadonlyScope];
+    final scopes = [SheetsApi.spreadsheetsReadonlyScope];
     var authClient;
     if (auth.oauthClientId != null) {
       void clientAuthPrompt(String url) {
@@ -72,7 +71,7 @@ class GSheetImporter {
         column < headerValues.length;
         column++) {
       //Stop parsing on first empty language code
-      if(headerValues[column].formattedValue == null) {
+      if (headerValues[column].formattedValue == null) {
         break;
       }
       final language = headerValues[column].formattedValue;
@@ -85,14 +84,14 @@ class GSheetImporter {
       var languages = row.values;
 
       //Skip empty rows
-      if(languages == null) {
+      if (languages == null) {
         continue;
       }
 
       var key = languages[config.sheetColumns.key].formattedValue;
 
       //Skip rows with missing key value
-      if(key == null) {
+      if (key == null) {
         continue;
       }
 
