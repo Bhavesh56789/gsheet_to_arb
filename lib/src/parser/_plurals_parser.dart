@@ -1,4 +1,5 @@
 import 'package:gsheet_to_arb/src/arb/arb.dart';
+import 'package:gsheet_to_arb/src/parser/translation_parser.dart';
 import 'package:recase/recase.dart';
 
 ///
@@ -20,7 +21,7 @@ class Completed extends PluralsStatus {
 }
 
 class PluralsParser {
-  final bool addContextPrefix;
+  final bool? addContextPrefix;
 
   final _pluralSeparator = '=';
 
@@ -33,15 +34,15 @@ class PluralsParser {
     'other': PluralCase.other
   };
 
-  String _key;
-  ArbResource _resource;
-  final _placeholders = <String, ArbResourcePlaceholder>{};
+  String? _key;
+  ArbResource? _resource;
+  final _placeholders = <String?, ArbResourcePlaceholder>{};
   final _values = <PluralCase, String>{};
 
   PluralsParser(this.addContextPrefix);
 
   PluralsStatus consume(ArbResource resource) {
-    final pluralCase = _getCase(resource.key);
+    final pluralCase = _getCase(resource.key!);
 
     // normal item
     if (pluralCase == null) {
@@ -61,7 +62,7 @@ class PluralsParser {
     }
 
     // plural item
-    final caseKey = _getCaseKey(resource.key);
+    final caseKey = _getCaseKey(resource.key!);
 
     if (_key == caseKey) {
       // same plural - another entry
@@ -71,8 +72,13 @@ class PluralsParser {
       // first plural
       _key = caseKey;
       _resource = resource;
+      String type = 'num';
       _placeholders[_countPlaceholder] = ArbResourcePlaceholder(
-          name: _countPlaceholder, description: 'plural count', type: 'num');
+        name: _countPlaceholder,
+        description: 'plural count',
+        type: optionalParametersMap[type]!.type,
+        format: optionalParametersMap[type]!.format,
+      );
       addPlaceholders(resource.placeholders);
       _values[pluralCase] = resource.value;
       return Consumed();
@@ -88,8 +94,13 @@ class PluralsParser {
       _key = caseKey;
       _resource = resource;
       _placeholders.clear();
+      String type = 'num';
       _placeholders[_countPlaceholder] = ArbResourcePlaceholder(
-          name: _countPlaceholder, description: 'plural count', type: 'num');
+        name: _countPlaceholder,
+        description: 'plural count',
+        type: optionalParametersMap[type]!.type,
+        format: optionalParametersMap[type]!.format,
+      );
       addPlaceholders(resource.placeholders);
       _values.clear();
       _values[pluralCase] = resource.value;
@@ -105,7 +116,7 @@ class PluralsParser {
     return Skip();
   }
 
-  PluralCase _getCase(String key) {
+  PluralCase? _getCase(String key) {
     if (key.contains(_pluralSeparator)) {
       for (var plural in _pluralKeywords.keys) {
         if (key.endsWith('$_pluralSeparator$plural')) {
@@ -121,16 +132,20 @@ class PluralsParser {
   }
 
   Completed _getCompleted({bool consumed = false}) {
-    final formattedKey = addContextPrefix && _resource.context.isNotEmpty
-        ? ReCase(_resource.context + '_' + _key).camelCase
-        : ReCase(_key).camelCase;
+    final formattedKey = addContextPrefix! && _resource!.context!.isNotEmpty
+        ? ReCase(_resource!.context! + '_' + _key!).camelCase
+        : ReCase(_key!).camelCase;
 
     return Completed(
-        ArbResource(formattedKey, PluralsFormatter.format(Map.from(_values)),
-            placeholders: List.from(_placeholders.values),
-            context: _resource.context,
-            description: _resource.description),
-        consumed: consumed);
+      ArbResource(
+        formattedKey,
+        PluralsFormatter.format(Map.from(_values)),
+        placeholders: List.from(_placeholders.values),
+        context: _resource!.context,
+        description: _resource!.description,
+      ),
+      consumed: consumed,
+    );
   }
 
   void addPlaceholders(List<ArbResourcePlaceholder> placeholders) {
@@ -158,7 +173,7 @@ class PluralsFormatter {
     final builder = StringBuffer();
     builder.write('{$_countPlaceholder, plural,');
     plural.forEach((key, value) {
-      if (value != null && value.isNotEmpty) {
+      if (value.isNotEmpty) {
         builder.write(' ${_icuPluralFormats[key]} {$value}');
       }
     });

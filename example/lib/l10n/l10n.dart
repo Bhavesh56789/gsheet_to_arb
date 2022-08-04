@@ -23,21 +23,15 @@ class L10n {
       Intl.message('Register', name: 'register', desc: 'contains registration');
 
   /// number of songs plural
-  String numberOfSongsAvailable(int count) => Intl.plural(count,
-      zero: 'No songs found.',
-      one: 'One song found.',
-      two: '$count songs found.',
-      few: '$count songs found.',
-      other: '$count song found.',
-      many: '$count songs found.',
+  String numberOfSongsAvailable(int count) => Intl.message(
+      '{count, plural, =0 {No songs found.} =1 {One song found.} =2 {$count songs found.} few {$count songs found.} many {$count songs found.} other {$count song found.}}',
       name: 'numberOfSongsAvailable',
       args: [count],
       desc: 'number of songs plural');
 
   /// currency dolars
-  String amountDollars(int count) => Intl.plural(count,
-      one: '$count Canadian dollar',
-      other: '$count Canadian dollars',
+  String amountDollars(int count) => Intl.message(
+      '{count, plural, =1 {$count Canadian dollar} other {$count Canadian dollars}}',
       name: 'amountDollars',
       args: [count],
       desc: 'currency dolars');

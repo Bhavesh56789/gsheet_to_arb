@@ -23,7 +23,8 @@
             "program": "../bin/import.dart",
             "request": "launch",
             "type": "dart",
-            "cwd": "${workspaceFolder}/example"
+            "cwd": "${workspaceFolder}/example",
+            "args": []
         },
     ]
 }

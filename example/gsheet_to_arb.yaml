@@ -1,0 +1,19 @@
+gsheet_to_arb: 
+  arb_file_prefix: "app"
+  localization_file_name: "l10n"
+  output_directory: "lib/l10n"
+  gsheet: 
+    auth_file: "./gsheet_to_arb_auth.yaml"
+    category_prefix: "# "
+    document_id: "11lnO2HHal2clYVizqT5AypMqhmgehghgehwgehwhegwhegwhgehwgehwgerhwhrg0m9e9E6gwV07lwpHc"
+    sheet_id: "2"
+    columns: 
+      category: 1
+      description: 2
+      first_language_key: 4
+      key: 0
+    rows: 
+      first_translation_row: 1
+      header_row: 0
+  add_context_prefix: false
+  generate_code: false

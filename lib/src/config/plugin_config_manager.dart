@@ -10,52 +10,52 @@ import 'package:gsheet_to_arb/src/utils/yaml_utils.dart';
 
 import 'plugin_config.dart';
 
-final authFileName = 'gsheet_to_arb.yaml';
-final configFileName = 'pubspec.yaml';
+final authFileName = 'gsheet_to_arb_auth.yaml';
+final configFileName = 'gsheet_to_arb.yaml';
 final _gitignore = '.gitignore';
 
 class PluginConfigManager {
-  Future<GsheetToArbConfig> getConfig() async {
-    final pubspec = YamlUtils.load(configFileName);
-    final config = PluginConfigRoot.fromJson(pubspec).content;
+  Future<GsheetToArbConfig?> getConfig() async {
+    Map<String, dynamic> pubspec = YamlUtils.load(configFileName);
+    final GsheetToArbConfig? config =
+        PluginConfigRoot.fromJson(pubspec).content;
 
-    if (config?.gsheet?.authFile != null) {
-      if (!FileUtils.exists(config.gsheet.authFile)) {
+    if (config?.gsheet!.authFile != null) {
+      if (!FileUtils.exists(config!.gsheet!.authFile!)) {
         return null;
       }
 
-      final authConfig = YamlUtils.load(config.gsheet.authFile);
-      config.gsheet.auth = AuthConfig.fromJson(authConfig);
+      final authConfig = YamlUtils.load(config.gsheet!.authFile!);
+      config.gsheet!.auth = AuthConfig.fromJson(authConfig);
     }
 
-    if (config != null) {
-      config.generateCode = config.generateCode ?? true;
-      config.addContextPrefix = config.addContextPrefix ?? false;
-    }
+    config!.generateCode = config.generateCode ?? false;
+    config.addContextPrefix = config.addContextPrefix ?? false;
 
     return config;
   }
 
   void createConfig() {
     final pubspec = YamlUtils.load(configFileName);
+    // ignore: unnecessary_null_comparison
     if (PluginConfigRoot.fromJson(pubspec).content != null) {
       Log.i('Config already exists, please check your $configFileName');
     } else {
       final config = GsheetToArbConfig(
-          addContextPrefix: false,
-          generateCode: true,
-          outputDirectoryPath: 'lib/l10n',
-          arbFilePrefix: 'intl',
-          localizationFileName: 'l10n',
-          gsheet: GoogleSheetConfig(
-              categoryPrefix: '# ',
-              sheetId: '0',
-              documentId: '<ADD_DOCUMENT_ID_HERE>',
-              authFile: './' + authFileName,
-              sheetColumns: SheetColumns(),
-              sheetRows: SheetRows(),
-          ),
-        );
+        addContextPrefix: false,
+        generateCode: true,
+        outputDirectoryPath: 'lib/l10n',
+        arbFilePrefix: 'intl',
+        localizationFileName: 'l10n',
+        gsheet: GoogleSheetConfig(
+          categoryPrefix: '# ',
+          sheetId: '0',
+          documentId: '<ADD_DOCUMENT_ID_HERE>',
+          authFile: './' + authFileName,
+          sheetColumns: SheetColumns(),
+          sheetRows: SheetRows(),
+        ),
+      );
 
       final root = PluginConfigRoot(config).toJson();
       final yamlString = '\n' + YamlUtils.toYamlString(root);
