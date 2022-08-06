@@ -15,10 +15,6 @@ dependencies:
   googleapis_auth: ^1.3.1
   googleapis: ^9.1.0
   code_builder: ^4.2.0
-  intl_translation:
-    git: 
-      url: https://github.com/agniswarmandal/intl_translation.git
-      ref: master
   json_annotation: ^4.6.0
   logging: ^1.0.2
   recase: ^4.0.0

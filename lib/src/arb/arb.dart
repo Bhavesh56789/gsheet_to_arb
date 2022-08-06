@@ -83,37 +83,42 @@ class ArbResource {
     }
   }
 
-  Map<String?, Object> _formatPlaceholders(
-      List<ArbResourcePlaceholder> placeholders) {
-    final map = <String?, Object>{};
+  addPlaceHolders(List<ArbResourcePlaceholder> placeholders) {
+    for (ArbResourcePlaceholder placeholder in placeholders) {
+      if (this
+              .placeholders
+              .indexWhere((element) => element.name == placeholder.name) ==
+          -1) {
+        this.placeholders.addAll(placeholders);
+      }
+    }
+  }
 
+  Map<String?, Object> _formatPlaceholders(
+    List<ArbResourcePlaceholder> placeholders,
+  ) {
+    final map = <String?, Object>{};
     placeholders.forEach((placeholder) {
-      // final placeholderArgs = <String, Object?>{};
-      final placeholderArgs = placeholder.toJson();
-      // if (placeholder.type != null) {
-      //   placeholderArgs['type'] = placeholder.type;
-      // }
-      // if (placeholder.format != null)
-      //   placeholderArgs['format'] = placeholder.format;
-      // placeholderArgs['optionalParameters'] =
-      //     placeholder.optionalParameters?.toJson();
+      final placeholderArgs = {
+        ...placeholder.toJson(),
+        ...(placeholder.dataType ?? {})
+      };
       map[placeholder.name] = placeholderArgs;
     });
     return map;
   }
 }
 
-//TODO: THIS needs to be configured to support placeholders of date, number, integer, string, etc.
 @JsonSerializable(includeIfNull: false)
 class ArbResourcePlaceholder {
   final String name;
   final String? format;
   final String? example;
   final String? description;
-  // type can be int, num, string, date, money, double
   final String type;
-  final OptionalParameters? optionalParameters;
-  String? isCustomDateFormat;
+
+  @JsonKey(ignore: true)
+  Map<String, dynamic>? dataType;
 
   ArbResourcePlaceholder({
     required this.name,
@@ -121,35 +126,16 @@ class ArbResourcePlaceholder {
     this.description,
     this.format,
     this.example,
-    this.optionalParameters,
-  }) {
-    if (this.type == 'DateTime') {
-      isCustomDateFormat = "true";
-    }
-  }
+    this.dataType,
+  });
   factory ArbResourcePlaceholder.fromJson(Map<String, dynamic> json) =>
       _$ArbResourcePlaceholderFromJson(json);
 
   Map<String, dynamic> toJson() => _$ArbResourcePlaceholderToJson(this);
-}
-
-@JsonSerializable(includeIfNull: false)
-class OptionalParameters {
-  final int? decimalDigits;
-  final String? name;
-  final String? symbol;
-  final String? customPattern;
-
-  OptionalParameters({
-    this.decimalDigits,
-    this.name,
-    this.symbol,
-    this.customPattern,
-  });
-  factory OptionalParameters.fromJson(Map<String, dynamic> json) =>
-      _$OptionalParametersFromJson(json);
-
-  Map<String, dynamic> toJson() => _$OptionalParametersToJson(this);
+  @override
+  bool operator ==(other) {
+    return this.name == (other as ArbResourcePlaceholder).name;
+  }
 }
 
 class ArbBundle {

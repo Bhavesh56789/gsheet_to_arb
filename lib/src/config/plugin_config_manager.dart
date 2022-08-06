@@ -15,10 +15,11 @@ final configFileName = 'gsheet_to_arb.yaml';
 final _gitignore = '.gitignore';
 
 class PluginConfigManager {
-  Future<GsheetToArbConfig?> getConfig() async {
+  Future<PluginConfigRoot?> getConfig() async {
     Map<String, dynamic> pubspec = YamlUtils.load(configFileName);
-    final GsheetToArbConfig? config =
-        PluginConfigRoot.fromJson(pubspec).content;
+    final PluginConfigRoot? rootConfig = PluginConfigRoot.fromJson(pubspec);
+
+    final config = rootConfig!.content;
 
     if (config?.gsheet!.authFile != null) {
       if (!FileUtils.exists(config!.gsheet!.authFile!)) {
@@ -26,13 +27,13 @@ class PluginConfigManager {
       }
 
       final authConfig = YamlUtils.load(config.gsheet!.authFile!);
-      config.gsheet!.auth = AuthConfig.fromJson(authConfig);
+      rootConfig.auth = AuthConfig.fromJson(authConfig);
     }
 
     config!.generateCode = config.generateCode ?? false;
     config.addContextPrefix = config.addContextPrefix ?? false;
 
-    return config;
+    return rootConfig;
   }
 
   void createConfig() {
@@ -49,8 +50,7 @@ class PluginConfigManager {
         localizationFileName: 'l10n',
         gsheet: GoogleSheetConfig(
           categoryPrefix: '# ',
-          sheetId: '0',
-          documentId: '<ADD_DOCUMENT_ID_HERE>',
+          sheetId: 0,
           authFile: './' + authFileName,
           sheetColumns: SheetColumns(),
           sheetRows: SheetRows(),
@@ -75,6 +75,7 @@ class PluginConfigManager {
           clientEmail: 'TODO',
           privateKey: 'TODO',
         ),
+        documentId: '<ADD_DOCUMENT_ID_HERE>',
       );
 
       final authYaml = YamlUtils.toYamlString(authConfig.toJson());
@@ -82,7 +83,8 @@ class PluginConfigManager {
       Log.i('Auth config has been added to the $authFileName');
       Log.i('More info:');
       Log.i(
-          'https://github.com/gocal/gsheet_to_arb/blob/develop/doc/Authentication.md');
+        'https://github.com/gocal/gsheet_to_arb/blob/develop/doc/Authentication.md',
+      );
     }
     _checkAuthIgonre(authFileName);
   }

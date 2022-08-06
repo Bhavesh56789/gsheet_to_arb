@@ -9,7 +9,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:uuid/uuid.dart';
 
 class GSheetImporter {
-  final GoogleSheetConfig? config;
+  final PluginConfigRoot? config;
 
   GSheetImporter({
     this.config,
@@ -62,7 +62,7 @@ class GSheetImporter {
   }
 
   Future<TranslationsDocument> _importFrom(Spreadsheet spreadsheet) async {
-    final sheet = spreadsheet.sheets![0];
+    final sheet = spreadsheet.sheets![config!.content!.gsheet!.sheetId!];
     final rows = sheet.data![0].rowData!;
     final header = rows[0];
     final headerValues = header.values!;
@@ -70,8 +70,10 @@ class GSheetImporter {
     final languages = <String?>[];
     final items = <TranslationRow>[];
 
-    var firstLanguageColumn = config!.sheetColumns!.first_language_key;
-    var firstTranslationsRow = config!.sheetRows!.first_translation_row;
+    var firstLanguageColumn =
+        config!.content!.gsheet!.sheetColumns!.first_language_key;
+    var firstTranslationsRow =
+        config!.content!.gsheet!.sheetRows!.first_translation_row;
 
     for (var column = firstLanguageColumn!;
         column < headerValues.length;
@@ -94,8 +96,10 @@ class GSheetImporter {
         continue;
       }
 
-      var key = languages[config!.sheetColumns!.key!].formattedValue;
-      var category = languages[config!.sheetColumns!.category!].formattedValue;
+      var key =
+          languages[config!.content!.gsheet!.sheetColumns!.key!].formattedValue;
+      var category = languages[config!.content!.gsheet!.sheetColumns!.category!]
+          .formattedValue;
       //Skip rows with missing key value
       if (key == null) {
         continue;
@@ -108,7 +112,9 @@ class GSheetImporter {
       // }
 
       final description =
-          languages[config!.sheetColumns!.description!].formattedValue ?? '';
+          languages[config!.content!.gsheet!.sheetColumns!.description!]
+                  .formattedValue ??
+              '';
 
       final values = row.values!
           .sublist(firstLanguageColumn, row.values!.length)

@@ -6,10 +6,6 @@ environment:
 
 dependencies:
   intl:
-  intl_translation:
-    git: 
-      url: https://github.com/agniswarmandal/intl_translation.git
-      ref: master
 
 dev_dependencies:
   gsheet_to_arb:

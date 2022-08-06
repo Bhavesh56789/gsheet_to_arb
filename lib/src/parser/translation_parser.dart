@@ -8,208 +8,109 @@
 
 import 'dart:async';
 import 'package:gsheet_to_arb/src/arb/arb.dart';
+import 'package:gsheet_to_arb/src/parser/_gender_parser.dart';
+import 'package:gsheet_to_arb/src/parser/_plurals_parser.dart';
+import 'package:gsheet_to_arb/src/parser/_select_parser.dart';
+import 'package:gsheet_to_arb/src/parser/_helper.dart';
 import 'package:gsheet_to_arb/src/translation_document.dart';
 import 'package:gsheet_to_arb/src/utils/log.dart';
 
 import 'package:quiver/iterables.dart' as iterables;
-import 'package:recase/recase.dart';
-
-import '_plurals_parser.dart';
 
 class TranslationParser {
   final bool? addContextPrefix;
 
   TranslationParser({this.addContextPrefix});
 
-  Future<ArbBundle> parseDocument(TranslationsDocument document) async {
+  Future<ArbBundle> parseDocument(
+    TranslationsDocument document,
+    Map<String, dynamic>? types,
+  ) async {
     final builders = <ArbDocumentBuilder>[];
-    final parsers = <PluralsParser>[];
+    final pluralparsers = <PluralParser>[];
+    final selectparsers = <SelectParser>[];
+    final genderparsers = <GenderParser>[];
 
-    for (var langauge in document.languages!) {
-      final builder = ArbDocumentBuilder(langauge, document.lastModified);
-      final parser = PluralsParser(addContextPrefix);
+    for (var language in document.languages!) {
+      final builder = ArbDocumentBuilder(language, document.lastModified);
       builders.add(builder);
-      parsers.add(parser);
+      pluralparsers.add(PluralParser(addContextPrefix));
+      selectparsers.add(SelectParser(addContextPrefix));
+      genderparsers.add(GenderParser(addContextPrefix));
     }
 
-    // for each row
-    for (var item in document.items!) {
-      // for each language
-      for (var index in iterables.range(0, document.languages!.length)) {
-        var itemValue;
+    for (var index in iterables.range(0, document.languages!.length)) {
+      final builder = builders[index as int];
+      final pluralparser = pluralparsers[index];
+      final selectParser = selectparsers[index];
+      final genderParser = genderparsers[index];
+      Log.i('Parsing language ${builder.locale}');
+      for (var item in document.items!) {
+        String itemValue;
         //incase value does not exist
         if (index < item.values!.length) {
-          itemValue = item.values![index as int];
+          itemValue = item.values![index];
         } else {
           itemValue = '';
         }
-
-        if (itemValue == '') {
+        if (itemValue.isEmpty) {
           Log.i('WARNING: empty string in lang: ' +
-              document.languages![index as int]! +
+              document.languages![index]! +
               ', key: ' +
               item.key!);
-        }
-
-        final itemPlaceholders = _findPlaceholders(itemValue);
-        itemValue = _replacePlaceholders(itemValue);
-
-        final builder = builders[index as int];
-        final parser = parsers[index];
-
-        // plural consume
-        final status = parser.consume(ArbResource(
-          item.key,
-          itemValue,
-          placeholders: itemPlaceholders,
-          context: item.context,
-          description: item.description,
-        ));
-        // TODO: THIS STATUS CHECK WON'T WORK IF THERE IS NO PLURAL FOR THE PARTICULAR DOCUMENT FORMAT
-        if (status is Consumed) {
           continue;
         }
+        final itemPlaceholders = findPlaceholders(itemValue, types);
+        itemValue = replacePlaceholders(itemValue);
 
-        if (status is Completed) {
-          builder.add(status.resource);
-
-          // next plural
-          if (status.consumed) {
-            continue;
-          }
+        if (item.category == 'plurals') {
+          pluralparser.consume(ArbResource(
+            item.key,
+            itemValue,
+            placeholders: itemPlaceholders,
+            context: item.context,
+            description: item.description,
+          ));
+        } else if (item.category == 'gender') {
+          genderParser.consume(ArbResource(
+            item.key,
+            itemValue,
+            placeholders: itemPlaceholders,
+            context: item.context,
+            description: item.description,
+          ));
+        } else if (item.category == 'select') {
+          selectParser.consume(ArbResource(
+            item.key,
+            itemValue,
+            placeholders: itemPlaceholders,
+            context: item.context,
+            description: item.description,
+          ));
+        } else {
+          final key = getContexedKey(addContextPrefix, item.key!, item.context);
+          builder.add(ArbResource(
+            key,
+            itemValue,
+            placeholders: itemPlaceholders,
+            context: item.context,
+            description: item.description,
+          ));
         }
-
-        final key = addContextPrefix! && item.category!.isNotEmpty
-            ? ReCase(item.category! + '_' + item.key!).camelCase
-            : ReCase(item.key!).camelCase;
-
-        // add resource
-        builder.add(ArbResource(
-          key,
-          itemValue,
-          context: item.category,
-          description: item.description,
-          placeholders: itemPlaceholders,
-        ));
       }
+      pluralparser.compile().forEach((resource) {
+        builder.add(resource);
+      });
+      selectParser.compile().forEach((resource) {
+        builder.add(resource);
+      });
+      genderParser.compile().forEach((resource) {
+        builder.add(resource);
+      });
     }
-
-    // finalizer
-    for (var index in iterables.range(0, document.languages!.length - 1)) {
-      final builder = builders[index as int];
-      final parser = parsers[index];
-      final status = parser.complete();
-      if (status is Completed) {
-        builder.add(status.resource);
-      }
-    }
-
     // build all documents
     var documents = <ArbDocument>[];
     builders.forEach((builder) => documents.add(builder.build()));
     return ArbBundle(documents);
   }
-
-  // TODO: VISIT THIS AND CHANGE THE IMPLEMENTATION of the same
-  final _placeholderRegex = RegExp('\\{{(.+?)\\}}');
-
-  List<ArbResourcePlaceholder> _findPlaceholders(String text) {
-    if (text.isEmpty) {
-      return <ArbResourcePlaceholder>[];
-    }
-
-    var matches = _placeholderRegex.allMatches(text);
-    var placeholders = <String, ArbResourcePlaceholder>{};
-    matches.forEach((Match match) {
-      var group = match.group(0)!;
-      var diff = group.length - 2;
-      String variableType = 'string';
-      if (group.contains(',')) {
-        diff = group.indexOf(',');
-        variableType = group.substring(diff + 1, group.length - 2).trim();
-      }
-      var placeholderName = group.substring(2, diff).trim();
-
-      if (placeholders.containsKey(placeholderName)) {
-        throw Exception('Placeholder $placeholderName already declared');
-      }
-      // TODO: This is now coming as a variable from the user
-      placeholders[placeholderName] = ArbResourcePlaceholder(
-        name: placeholderName,
-        type: optionalParametersMap[variableType]!.type,
-        optionalParameters:
-            optionalParametersMap[variableType]?.optionalParameters,
-        format: optionalParametersMap[variableType]?.format,
-      );
-    });
-    return placeholders.values.toList();
-  }
-
-  String _replacePlaceholders(String text) {
-    var matches = _placeholderRegex.allMatches(text);
-    matches.forEach((Match match) {
-      var group = match.group(0)!;
-      var diff = group.length - 2;
-      if (group.contains(',')) {
-        diff = group.indexOf(',');
-      }
-      var placeholderName = group.substring(2, diff).trim();
-      // ignore:  prefer_adjacent_string_concatenation
-      text = text.replaceAll(group, '{$placeholderName}');
-    });
-    return text;
-  }
-}
-
-// TODO: This should come from global config
-Map<String, CleanOptionalParameters> optionalParametersMap = {
-  'string': CleanOptionalParameters(type: 'String'),
-  "int": CleanOptionalParameters(
-    type: "int",
-    format: "decimalPattern",
-    optionalParameters: OptionalParameters(
-      decimalDigits: 0,
-    ),
-  ),
-  'num': CleanOptionalParameters(
-    type: "num",
-    format: "currency",
-    optionalParameters: OptionalParameters(
-      decimalDigits: 2,
-      customPattern: "00",
-    ),
-  ),
-  'date': CleanOptionalParameters(
-    type: "DateTime",
-    format: 'dd-MMM-yyyy',
-  ),
-  "money": CleanOptionalParameters(
-    type: "num",
-    format: "currency",
-    optionalParameters: OptionalParameters(
-      decimalDigits: 2,
-      name: "INR",
-      symbol: "₹",
-      customPattern: "¤#0.00",
-    ),
-  ),
-  "double": CleanOptionalParameters(
-    type: "double",
-    format: "currency",
-    optionalParameters: OptionalParameters(
-      decimalDigits: 2,
-    ),
-  )
-};
-
-class CleanOptionalParameters {
-  final String type;
-  final OptionalParameters? optionalParameters;
-  final String? format;
-
-  CleanOptionalParameters({
-    this.format,
-    required this.type,
-    this.optionalParameters,
-  });
 }

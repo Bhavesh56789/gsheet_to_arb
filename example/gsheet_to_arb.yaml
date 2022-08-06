@@ -1,19 +1,60 @@
 gsheet_to_arb: 
-  arb_file_prefix: "app"
+  arb_file_prefix: "app!"
   localization_file_name: "l10n"
   output_directory: "lib/l10n"
   gsheet: 
     auth_file: "./gsheet_to_arb_auth.yaml"
     category_prefix: "# "
-    document_id: "11lnO2HHal2clYVizqT5AypMqhmgehghgehwgehwhegwhegwhgehwgehwgerhwhrg0m9e9E6gwV07lwpHc"
-    sheet_id: "2"
+    sheet_id: 0
     columns: 
+      key: 0
       category: 1
       description: 2
+      context: 3
       first_language_key: 4
-      key: 0
     rows: 
       first_translation_row: 1
       header_row: 0
   add_context_prefix: false
-  generate_code: false
+
+data_types:
+  money:
+    type: double
+    format: currency
+    example: $1000.00
+    optionalParameters:
+      decimalDigits: 2
+      name: "INR"
+      symbol: "₹"
+      customPattern: "¤#0.00"
+  int:
+    type: int
+    format: currency
+    optionalParameters:
+      decimalDigits: 2
+  date:
+    type: DateTime
+    format: dd-MMM-yyyy
+    isCustomDateFormat: "true"
+  num:
+    type: num
+    format: currency
+    optionalParameters:
+      decimalDigits: 2
+      customPattern: "00"
+  double:
+    type: num
+    format: currency
+    optionalParameters:
+      decimalDigits: 2
+  string:
+    type: String
+
+
+  
+
+
+
+
+
+

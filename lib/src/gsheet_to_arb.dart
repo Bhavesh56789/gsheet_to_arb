@@ -6,7 +6,7 @@ import 'config/plugin_config.dart';
 import 'gsheet/ghseet_importer.dart';
 
 class GSheetToArb {
-  final GsheetToArbConfig? config;
+  final PluginConfigRoot? config;
 
   final _arbSerializer = ArbSerializer();
 
@@ -16,20 +16,24 @@ class GSheetToArb {
     Log.i('Building translation...');
     Log.startTimeTracking();
 
-    final gsheet = config!.gsheet!;
-    final documentId = gsheet.documentId!;
+    final documentId = config!.auth.documentId!;
 
     // import TranslationsDocument
-    final importer = GSheetImporter(config: gsheet);
+    final importer = GSheetImporter(config: config);
     final document = await importer.import(documentId);
 
     // Parse TranslationsDocument to ArbBundle
     final sheetParser =
-        TranslationParser(addContextPrefix: config!.addContextPrefix);
-    final arbBundle = await sheetParser.parseDocument(document);
+        TranslationParser(addContextPrefix: config!.content!.addContextPrefix);
+    final arbBundle =
+        await sheetParser.parseDocument(document, config?.dataTypes);
 
     // Save ArbBundle
-    _arbSerializer.saveArbBundle(arbBundle, config!.outputDirectoryPath!);
+    _arbSerializer.saveArbBundle(
+      arbBundle,
+      config!.content!.outputDirectoryPath!,
+      config!.content!.arbFilePrefix!,
+    );
 
     Log.i('Succeeded after ${Log.stopTimeTracking()}');
   }

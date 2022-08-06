@@ -12,11 +12,13 @@ PluginConfigRoot _$PluginConfigRootFromJson(Map<String, dynamic> json) =>
           ? null
           : GsheetToArbConfig.fromJson(
               json['gsheet_to_arb'] as Map<String, dynamic>),
+      dataTypes: json['data_types'] as Map<String, dynamic>?,
     );
 
 Map<String, dynamic> _$PluginConfigRootToJson(PluginConfigRoot instance) =>
     <String, dynamic>{
       'gsheet_to_arb': instance.content,
+      'data_types': instance.dataTypes,
     };
 
 GsheetToArbConfig _$GsheetToArbConfigFromJson(Map<String, dynamic> json) =>
@@ -44,8 +46,7 @@ Map<String, dynamic> _$GsheetToArbConfigToJson(GsheetToArbConfig instance) =>
 GoogleSheetConfig _$GoogleSheetConfigFromJson(Map<String, dynamic> json) =>
     GoogleSheetConfig(
       authFile: json['auth_file'] as String?,
-      documentId: json['document_id'] as String?,
-      sheetId: json['sheet_id'] as String?,
+      sheetId: json['sheet_id'] as int?,
       categoryPrefix: json['category_prefix'] as String?,
       sheetColumns: SheetColumns.generateFromJson(json['columns']),
       sheetRows: SheetRows.generateFromJson(json['rows']),
@@ -53,7 +54,6 @@ GoogleSheetConfig _$GoogleSheetConfigFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$GoogleSheetConfigToJson(GoogleSheetConfig instance) =>
     <String, dynamic>{
-      'document_id': instance.documentId,
       'sheet_id': instance.sheetId,
       'category_prefix': instance.categoryPrefix,
       'auth_file': instance.authFile,
@@ -97,12 +97,14 @@ AuthConfig _$AuthConfigFromJson(Map<String, dynamic> json) => AuthConfig(
           ? null
           : ServiceAccountKey.fromJson(
               json['service_account_key'] as Map<String, dynamic>),
+      documentId: json['document_id'] as String?,
     );
 
 Map<String, dynamic> _$AuthConfigToJson(AuthConfig instance) =>
     <String, dynamic>{
       'oauth_client_id': instance.oauthClientId,
       'service_account_key': instance.serviceAccountKey,
+      'document_id': instance.documentId,
     };
 
 OAuthClientId _$OAuthClientIdFromJson(Map<String, dynamic> json) =>

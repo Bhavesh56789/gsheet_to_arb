@@ -1,26 +1,16 @@
 import 'package:gsheet_to_arb/src/arb/arb.dart';
-import 'package:gsheet_to_arb/src/parser/translation_parser.dart';
-import 'package:recase/recase.dart';
+import 'package:gsheet_to_arb/src/parser/_helper.dart';
+import 'package:gsheet_to_arb/src/utils/log.dart';
 
-///
-/// Plurals
-///
 enum PluralCase { zero, one, two, few, many, other }
 
-abstract class PluralsStatus {}
+final _countPlaceHolder = ArbResourcePlaceholder(
+  name: _countPlaceholder,
+  description: 'plural count',
+  type: 'num',
+);
 
-class Skip extends PluralsStatus {}
-
-class Consumed extends PluralsStatus {}
-
-class Completed extends PluralsStatus {
-  final ArbResource resource;
-  final bool consumed;
-
-  Completed(this.resource, {this.consumed = false});
-}
-
-class PluralsParser {
+class PluralParser {
   final bool? addContextPrefix;
 
   final _pluralSeparator = '=';
@@ -33,87 +23,54 @@ class PluralsParser {
     'many': PluralCase.many,
     'other': PluralCase.other
   };
+  PluralParser(this.addContextPrefix);
+  final _arbResources = <ArbResource>[];
+  final _plurals = <Plural>[];
 
-  String? _key;
-  ArbResource? _resource;
-  final _placeholders = <String?, ArbResourcePlaceholder>{};
-  final _values = <PluralCase, String>{};
-
-  PluralsParser(this.addContextPrefix);
-
-  PluralsStatus consume(ArbResource resource) {
-    final pluralCase = _getCase(resource.key!);
-
-    // normal item
-    if (pluralCase == null) {
-      if (_values.isNotEmpty) {
-        final status = _getCompleted();
-        _key = null;
-        _resource = null;
-        _placeholders.clear();
-        _values.clear();
-        return status;
-      } else {
-        _key = null;
-        _resource = null;
-        _placeholders.clear();
-        return Skip();
-      }
-    }
-
-    // plural item
-    final caseKey = _getCaseKey(resource.key!);
-
-    if (_key == caseKey) {
-      // same plural - another entry
-      _values[pluralCase] = resource.value;
-      return Consumed();
-    } else if (_key == null) {
-      // first plural
-      _key = caseKey;
-      _resource = resource;
-      String type = 'num';
-      _placeholders[_countPlaceholder] = ArbResourcePlaceholder(
-        name: _countPlaceholder,
-        description: 'plural count',
-        type: optionalParametersMap[type]!.type,
-        format: optionalParametersMap[type]!.format,
-      );
-      addPlaceholders(resource.placeholders);
-      _values[pluralCase] = resource.value;
-      return Consumed();
-    } else {
-      // another plural
-      PluralsStatus status;
-      if (_values.isNotEmpty) {
-        status = _getCompleted(consumed: true);
-      } else {
-        status = Consumed();
-      }
-
-      _key = caseKey;
-      _resource = resource;
-      _placeholders.clear();
-      String type = 'num';
-      _placeholders[_countPlaceholder] = ArbResourcePlaceholder(
-        name: _countPlaceholder,
-        description: 'plural count',
-        type: optionalParametersMap[type]!.type,
-        format: optionalParametersMap[type]!.format,
-      );
-      addPlaceholders(resource.placeholders);
-      _values.clear();
-      _values[pluralCase] = resource.value;
-
-      return status;
-    }
+  consume(ArbResource resource) {
+    _arbResources.add(resource);
   }
 
-  PluralsStatus complete() {
-    if (_values.isNotEmpty) {
-      return _getCompleted();
+  List<ArbResource> compile() {
+    for (ArbResource resource in _arbResources) {
+      final pluralCase = _getCase(resource.key!);
+      if (pluralCase == null) {
+        Log.e('valid PluralCase is not present for key: ${resource.key}');
+        continue;
+      }
+      final caseKey = _getCaseKey(resource.key!);
+      _addToPlurals(caseKey, pluralCase, resource);
     }
-    return Skip();
+    return _plurals
+        .map((e) => ArbResource(
+              getContexedKey(addContextPrefix, e.key, e.resource.context),
+              e.value,
+              context: e.resource.context,
+              description: e.resource.description,
+              placeholders: [...e.resource.placeholders, _countPlaceHolder],
+            ))
+        .toList();
+  }
+
+  void _addToPlurals(
+    String key,
+    PluralCase pluralCase,
+    ArbResource resource,
+  ) {
+    int index = _plurals.indexWhere((plurals) => plurals.key == key);
+    resource.addPlaceHolders([
+      ...(index == -1 ? [] : _plurals[index].resource.placeholders),
+      ...resource.placeholders,
+    ]);
+    if (index == -1) {
+      Plural plural = new Plural(key);
+      plural.addPlural(pluralCase, resource.value);
+      plural.addResource(resource);
+      _plurals.add(plural);
+    } else {
+      _plurals[index].addPlural(pluralCase, resource.value);
+      _plurals[index].addResource(resource);
+    }
   }
 
   PluralCase? _getCase(String key) {
@@ -130,30 +87,32 @@ class PluralsParser {
   String _getCaseKey(String key) {
     return key.substring(0, key.lastIndexOf(_pluralSeparator));
   }
+}
 
-  Completed _getCompleted({bool consumed = false}) {
-    final formattedKey = addContextPrefix! && _resource!.context!.isNotEmpty
-        ? ReCase(_resource!.context! + '_' + _key!).camelCase
-        : ReCase(_key!).camelCase;
+class Plural {
+  final Map<PluralCase, String> values = {};
+  final String key;
+  late ArbResource resource;
 
-    return Completed(
-      ArbResource(
-        formattedKey,
-        PluralsFormatter.format(Map.from(_values)),
-        placeholders: List.from(_placeholders.values),
-        context: _resource!.context,
-        description: _resource!.description,
-      ),
-      consumed: consumed,
-    );
+  Plural(this.key);
+
+  addPlural(PluralCase pluralCase, String value) {
+    if (values[pluralCase] != null) {
+      Log.e('Duplicate plural case for key: $key and pluralCase: $pluralCase');
+    }
+    values[pluralCase] = value;
   }
 
-  void addPlaceholders(List<ArbResourcePlaceholder> placeholders) {
-    for (var placeholder in placeholders) {
-      if (!_placeholders.containsKey(placeholder.name)) {
-        _placeholders[placeholder.name] = placeholder;
-      }
+  addResource(ArbResource resource) {
+    this.resource = resource;
+  }
+
+  get value {
+    if (values[PluralCase.other] == null) {
+      Log.e(
+          'other case is not present for: $key and pluralCase: ${PluralCase.other.name}');
     }
+    return PluralsFormatter.format(values);
   }
 }
 

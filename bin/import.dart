@@ -42,34 +42,34 @@ void main(List<String> args) async {
     exit(0);
   }
 
-  GsheetToArbConfig? config = await configManager.getConfig();
+  PluginConfigRoot? config = (await configManager.getConfig());
   if (config == null) {
     Log.i(
         'Config not found - please create config first with the --create-config flag');
     exit(1);
   }
 
-  _checkAuthConfig(config.gsheet!);
+  _checkAuthConfig(config.auth, config.content!.gsheet!);
 
   final gsheetToArb = GSheetToArb(config: config);
   gsheetToArb.build();
 }
 
-void _checkAuthConfig(GoogleSheetConfig config) {
+void _checkAuthConfig(AuthConfig config, GoogleSheetConfig gsheetConfig) {
   final placeholder = 'TODO';
 
   // ignore: unnecessary_null_comparison
-  if (config.auth == null) {
+  if (config == null) {
     Log.i(
-        'Authetnication config not found - please add config to ${config.authFile} file');
+        'Authetnication config not found - please add config to ${gsheetConfig.authFile} file');
     exit(1);
   }
 
-  final auth = config.auth;
+  final auth = config;
 
   if (auth.oauthClientId == null && auth.serviceAccountKey == null) {
     Log.i(
-        'Authetnication config is invalid - please add config to ${config.authFile} file');
+        'Authetnication config is invalid - please add config to ${gsheetConfig.authFile} file');
     exit(1);
   }
 

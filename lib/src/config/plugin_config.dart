@@ -17,8 +17,12 @@ part 'plugin_config.g.dart';
 class PluginConfigRoot {
   @JsonKey(name: 'gsheet_to_arb')
   GsheetToArbConfig? content;
+  @JsonKey(name: 'data_types')
+  Map<String, dynamic>? dataTypes;
+  @JsonKey(ignore: true)
+  late AuthConfig auth;
 
-  PluginConfigRoot(this.content);
+  PluginConfigRoot(this.content, {this.dataTypes});
 
   factory PluginConfigRoot.fromJson(Map<String, dynamic> json) =>
       _$PluginConfigRootFromJson(json);
@@ -69,11 +73,8 @@ class GsheetToArbConfig {
 ///
 @JsonSerializable()
 class GoogleSheetConfig {
-  @JsonKey(name: 'document_id')
-  String? documentId;
-
   @JsonKey(name: 'sheet_id')
-  String? sheetId;
+  int? sheetId;
 
   @JsonKey(name: 'category_prefix')
   String? categoryPrefix;
@@ -87,12 +88,8 @@ class GoogleSheetConfig {
   @JsonKey(name: 'rows', fromJson: SheetRows.generateFromJson)
   SheetRows? sheetRows;
 
-  @JsonKey(ignore: true)
-  late AuthConfig auth;
-
   GoogleSheetConfig({
     this.authFile,
-    this.documentId,
     this.sheetId,
     this.categoryPrefix,
     this.sheetColumns,
@@ -191,9 +188,13 @@ class AuthConfig {
   @JsonKey(name: 'service_account_key')
   ServiceAccountKey? serviceAccountKey;
 
+  @JsonKey(name: 'document_id')
+  String? documentId;
+
   AuthConfig({
     this.oauthClientId,
     this.serviceAccountKey,
+    this.documentId,
   });
 
   factory AuthConfig.fromJson(Map<String, dynamic> json) =>
