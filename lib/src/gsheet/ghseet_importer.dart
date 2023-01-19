@@ -47,7 +47,7 @@ class GSheetImporter {
         throw Exception('Auth client config is invalid');
       }
 
-      var id = ClientId(client?.clientId, client?.clientSecret);
+      var id = ClientId(client!.clientId, client!.clientSecret);
       authClient = await clientViaUserConsent(id, scopes, clientAuthPrompt);
     } else if (auth.serviceAccountKey != null) {
       final service = auth.serviceAccountKey;
