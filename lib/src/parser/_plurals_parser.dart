@@ -6,8 +6,7 @@ enum PluralCase { zero, one, two, few, many, other }
 
 final _countPlaceHolder = ArbResourcePlaceholder(
   name: _countPlaceholder,
-  description: 'plural count',
-  type: 'num',
+  description: 'plural count'
 );
 
 class PluralParser {
