@@ -5,9 +5,7 @@ import 'package:gsheet_to_arb/src/utils/log.dart';
 enum PluralCase { zero, one, two, few, many, other }
 
 final _countPlaceHolder = ArbResourcePlaceholder(
-  name: _countPlaceholder,
-  description: 'plural count'
-);
+    name: _countPlaceholder, description: 'plural count');
 
 class PluralParser {
   final bool? addContextPrefix;

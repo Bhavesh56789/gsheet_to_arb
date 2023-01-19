@@ -115,14 +115,14 @@ class ArbResourcePlaceholder {
   final String? format;
   final String? example;
   final String? description;
-  final String type;
+  final String? type;
 
   @JsonKey(ignore: true)
   Map<String, dynamic>? dataType;
 
   ArbResourcePlaceholder({
     required this.name,
-    required this.type,
+    this.type,
     this.description,
     this.format,
     this.example,
