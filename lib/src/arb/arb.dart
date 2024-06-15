@@ -117,7 +117,7 @@ class ArbResourcePlaceholder {
   final String? description;
   final String? type;
 
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   Map<String, dynamic>? dataType;
 
   ArbResourcePlaceholder({

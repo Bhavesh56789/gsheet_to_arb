@@ -6,26 +6,26 @@
 
 import 'dart:io';
 
-import 'package:file_utils/file_utils.dart';
+// import 'package:file_utils/file_utils.dart';
 
 class FileUtils {
   static bool exists(String filePath) {
-    final expandedFilePath = FilePath.expand(filePath);
-    final file = File(expandedFilePath);
+    // final expandedFilePath = FilePath.expand(filePath);
+    final file = File(filePath);
     return file.existsSync();
   }
 
   static String getContent(String filePath) {
-    final expandedFilePath = FilePath.expand(filePath);
-    final file = File(expandedFilePath);
+    // final expandedFilePath = FilePath.expand(filePath);
+    final file = File(filePath);
     assert(file.existsSync(), "filePath $filePath doesn't exist");
     final content = file.readAsStringSync();
     return content;
   }
 
   static void storeContent(String filePath, String content) {
-    final expandedFilePath = FilePath.expand(filePath);
-    final file = File(expandedFilePath);
+    // final expandedFilePath = FilePath.expand(filePath);
+    final file = File(filePath);
     if (!file.existsSync()) {
       file.createSync();
     }
@@ -33,8 +33,8 @@ class FileUtils {
   }
 
   static void append(String filePath, String content) {
-    final expandedFilePath = FilePath.expand(filePath);
-    final file = File(expandedFilePath);
+    // final expandedFilePath = FilePath.expand(filePath);
+    final file = File(filePath);
     assert(file.existsSync(), "filePath $filePath doesn't exist");
     file.writeAsString(content, mode: FileMode.append);
   }

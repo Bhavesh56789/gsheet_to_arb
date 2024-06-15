@@ -16,8 +16,9 @@ final _gitignore = '.gitignore';
 
 class PluginConfigManager {
   Future<PluginConfigRoot?> getConfig() async {
-    Map<String, dynamic> pubspec = YamlUtils.load(configFileName);
-    final PluginConfigRoot? rootConfig = PluginConfigRoot.fromJson(pubspec);
+    Map<String, dynamic>? pubspec = YamlUtils.load(configFileName);
+    final PluginConfigRoot? rootConfig =
+        PluginConfigRoot.fromJson(pubspec ?? {});
 
     final config = rootConfig!.content;
 
@@ -27,7 +28,7 @@ class PluginConfigManager {
       }
 
       final authConfig = YamlUtils.load(config.gsheet!.authFile!);
-      rootConfig.auth = AuthConfig.fromJson(authConfig);
+      rootConfig.auth = AuthConfig.fromJson(authConfig ?? {});
     }
 
     config!.generateCode = config.generateCode ?? false;
@@ -39,7 +40,7 @@ class PluginConfigManager {
   void createConfig() {
     final pubspec = YamlUtils.load(configFileName);
     // ignore: unnecessary_null_comparison
-    if (PluginConfigRoot.fromJson(pubspec).content != null) {
+    if (PluginConfigRoot.fromJson(pubspec ?? {}).content != null) {
       Log.i('Config already exists, please check your $configFileName');
     } else {
       final config = GsheetToArbConfig(
